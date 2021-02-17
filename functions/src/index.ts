@@ -45,6 +45,24 @@ app.post('/save/:userId', async (req, res) => {
     res.send(saveSuccess);
 })
 
+app.post('/verify/:userId', async (req, res) => {
+    const id = req.params.userId;
+    const tp = req.body.tp;
+
+    const response = await fetch('https://api.typingdna.com/verify/' + id, {
+        headers,
+        method: 'POST',
+        body: new URLSearchParams({
+            tp,
+        }),
+    })
+    const responseJson = await response.json();
+    console.log(responseJson);
+
+    const matchSuccess = (responseJson.result == 1);
+    res.send(matchSuccess);
+})
+
 app.get('/', (req, res) => {
     res.send('gg');
 })
