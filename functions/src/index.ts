@@ -15,6 +15,7 @@ const headers =  {
     'Authorization': 'basic ' + Buffer.from(apiKey + ':' + apiSecret).toString('base64'),
 }
 
+// Return true if user exists
 app.get('/userPresent/:userId', async (req, res) => {
     const id = req.params.userId
     const response = await fetch('https://api.typingdna.com/user/' + id, {
@@ -27,6 +28,7 @@ app.get('/userPresent/:userId', async (req, res) => {
     res.send(userPresent);
 })
 
+// Save new typing pattern for given user
 app.post('/save/:userId', async (req, res) => {
     const id = req.params.userId;
     const tp = req.body.tp;
@@ -45,9 +47,11 @@ app.post('/save/:userId', async (req, res) => {
     res.send(saveSuccess);
 })
 
+// Return true if typing pattern is a match for given user
 app.post('/verify/:userId', async (req, res) => {
     const id = req.params.userId;
     const tp = req.body.tp;
+    console.log('verifying', id)
 
     const response = await fetch('https://api.typingdna.com/verify/' + id, {
         headers,
@@ -57,9 +61,9 @@ app.post('/verify/:userId', async (req, res) => {
         }),
     })
     const responseJson = await response.json();
-    console.log(responseJson);
+    console.log('verification response', responseJson);
 
-    const matchSuccess = (responseJson.result == 1);
+    const matchSuccess = (responseJson.net_score > 50);
     res.send(matchSuccess);
 })
 
