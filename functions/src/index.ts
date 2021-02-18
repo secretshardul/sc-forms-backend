@@ -99,7 +99,7 @@ app.get('/form/:formSlug', async(req, res) => {
     const query = `query getFormFields($organizationSlug: String!, $eidOrSlug: String!) {
         forge(organizationSlug: $organizationSlug, eidOrSlug: $eidOrSlug) {
             name
-            config
+            fieldInfo
         }
     }`
     const variables = {
