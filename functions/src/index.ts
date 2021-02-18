@@ -21,15 +21,15 @@ const typeDnaAuth = {
 
 const anvilAuth = {
     apiKey: 'yI1jAMxHeVK3tqERBQFllhTdwzCal9X9',
-    apiSecret: '',
+    apiSecret: ':',
 }
 const anvilClient = new Anvil({ apiKey: anvilAuth.apiKey })
 
 function getBasicAuthHeaders(key: string, secret: string) {
     return {
         "Content-Type": "application/json",
-        Authorization: 'basic ' + Buffer.from(
-            typeDnaAuth.apiKey + ':' + typeDnaAuth.apiSecret
+        Authorization: 'Basic ' + Buffer.from(
+            key + ':' + secret
             ).toString('base64'),
     }
 }
@@ -94,17 +94,16 @@ app.get('/', (req, res) => {
 })
 
 // Return form name and fields
-app.get('/form/:formSlug', async(req, res) => {
-    const formSlug = req.params.formSlug;
-    const query = `query getFormFields($organizationSlug: String!, $eidOrSlug: String!) {
-        forge(organizationSlug: $organizationSlug, eidOrSlug: $eidOrSlug) {
-            name
-            fieldInfo
-        }
+app.get('/form/:eid', async(req, res) => {
+    const eid = req.params.eid;
+    const query = `query CastQuery($eid: String!) {
+      cast(eid: $eid) {
+        name
+        fieldInfo
+      }
     }`
     const variables = {
-         organizationSlug: "gamepe-app",
-         eidOrSlug: formSlug
+        eid
     }
     console.log(anvilHeaders);
     const response = await fetch(anvilUrl, {
@@ -115,10 +114,11 @@ app.get('/form/:formSlug', async(req, res) => {
         }),
         headers: anvilHeaders,
     })
+    console.log('Got response', response);
     try {
         const responseJson = await response.json();
         console.log('got form data', responseJson);
-        res.send(responseJson.data.forge);
+        res.send(responseJson.data.cast);
     } catch(error) {
         res.send(error);
     }
