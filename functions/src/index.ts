@@ -3,9 +3,12 @@ import * as express from  "express";
 import * as cors from "cors";
 import fetch from "node-fetch";
 import * as bodyParser from "body-parser";
+import * as stream from 'stream';
+const Anvil = require('@anvilco/anvil');
 
 const app = express();
 app.use(cors());
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const typingDnaUrl = 'https://api.typingdna.com/user/';
@@ -20,6 +23,7 @@ const anvilAuth = {
     apiKey: 'yI1jAMxHeVK3tqERBQFllhTdwzCal9X9',
     apiSecret: '',
 }
+const anvilClient = new Anvil({ apiKey: anvilAuth.apiKey })
 
 function getBasicAuthHeaders(key: string, secret: string) {
     return {
@@ -120,4 +124,22 @@ app.get('/form/:formSlug', async(req, res) => {
     }
 })
 
+app.post('/form/:formSlug', async (req, res) => {
+    // Get filled PDF
+    const formSlug = req.params.formSlug;
+    const { statusCode, data } = await anvilClient.fillPDF(formSlug, {
+        data: req.body
+    })
+    console.log('Write status', statusCode)
+    console.log('got file', data)
+
+    // Return PDF in response
+    var readStream = new stream.PassThrough()
+    readStream.end(data)
+
+    res.set('Content-disposition', 'attachment; filename=' + 'output.pdf')
+    res.set('Content-Type', 'application/pdf')
+    readStream.pipe(res);
+
+})
 exports.app = functions.https.onRequest(app);
