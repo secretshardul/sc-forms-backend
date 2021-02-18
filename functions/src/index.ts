@@ -11,7 +11,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-const typingDnaUrl = 'https://api.typingdna.com/user/';
+const typingDnaUrl = 'https://api.typingdna.com/';
 const anvilUrl = 'https://graphql.useanvil.com';
 
 const typeDnaAuth = {
@@ -23,25 +23,21 @@ const anvilAuth = {
     apiKey: 'yI1jAMxHeVK3tqERBQFllhTdwzCal9X9',
     apiSecret: ':',
 }
-const anvilClient = new Anvil({ apiKey: anvilAuth.apiKey })
+const anvilClient = new Anvil({ apiKey: anvilAuth.apiKey });
 
-function getBasicAuthHeaders(key: string, secret: string) {
-    return {
-        "Content-Type": "application/json",
-        Authorization: 'Basic ' + Buffer.from(
-            key + ':' + secret
-            ).toString('base64'),
-    }
+function basicAuth(key: string, secret: string) {
+    return 'Basic ' + Buffer.from(key + ':' + secret).toString('base64');
 }
-
-const typeDnaHeaders = getBasicAuthHeaders(typeDnaAuth.apiKey, typeDnaAuth.apiSecret);
-const anvilHeaders = getBasicAuthHeaders(anvilAuth.apiKey, anvilAuth.apiSecret);
+const typeDnaBasic = basicAuth(typeDnaAuth.apiKey, typeDnaAuth.apiSecret);
+const anvilBasic = basicAuth(anvilAuth.apiKey, anvilAuth.apiSecret);
 
 // Return true if user exists
 app.get('/userPresent/:userId', async (req, res) => {
     const id = req.params.userId
-    const response = await fetch(typingDnaUrl + id, {
-        headers: typeDnaHeaders,
+    const response = await fetch(typingDnaUrl + 'user/' + id, {
+        headers: {
+            Authorization: typeDnaBasic,
+        },
     })
     const responseJson = await response.json();
     console.log(responseJson);
@@ -54,19 +50,27 @@ app.get('/userPresent/:userId', async (req, res) => {
 app.post('/save/:userId', async (req, res) => {
     const id = req.params.userId;
     const tp = req.body.tp;
+    console.log('saving pattern', tp)
+    console.log('User ID', id)
 
-    const response = await fetch(typingDnaUrl + id, {
-        headers: typeDnaHeaders,
-        method: 'POST',
-        body: new URLSearchParams({
-            tp,
-        }),
-    })
-    const responseJson = await response.json()
-    console.log(responseJson);
+    try {
+        const response = await fetch(typingDnaUrl + 'save/' + id, {
+            method: 'POST',
+            body: new URLSearchParams({
+                tp,
+            }),
+            headers: {
+                Authorization: typeDnaBasic,
+            }
+        })
+        const responseJson = await response.json()
+        console.log('got response', responseJson)
 
-    const saveSuccess = (responseJson.success == 1);
-    res.send(saveSuccess);
+        const saveSuccess = (responseJson.success == 1)
+        res.send(saveSuccess);
+    } catch(error) {
+        res.send(error);
+    }
 })
 
 // Return true if typing pattern is a match for given user
@@ -75,12 +79,14 @@ app.post('/verify/:userId', async (req, res) => {
     const tp = req.body.tp;
     console.log('verifying', id)
 
-    const response = await fetch(typingDnaUrl + id, {
-        headers: typeDnaHeaders,
+    const response = await fetch(typingDnaUrl + 'verify/' + id, {
         method: 'POST',
         body: new URLSearchParams({
             tp,
         }),
+        headers: {
+            Authorization: typeDnaBasic,
+        }
     })
     const responseJson = await response.json();
     console.log('verification response', responseJson);
@@ -102,17 +108,17 @@ app.get('/form/:eid', async(req, res) => {
         fieldInfo
       }
     }`
-    const variables = {
-        eid
-    }
-    console.log(anvilHeaders);
+
     const response = await fetch(anvilUrl, {
         method: 'POST',
         body: JSON.stringify({
             query,
-            variables,
+            variables: { eid },
         }),
-        headers: anvilHeaders,
+        headers: {
+            Authorization: anvilBasic,
+            "Content-Type": "application/json"
+        }
     })
     console.log('Got response', response);
     try {
